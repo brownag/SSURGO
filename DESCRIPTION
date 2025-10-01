@@ -1,6 +1,6 @@
 Package: SSURGO
 Title: Targets Pipeline for Processing SSURGO Data with DuckDB
-Version: 0.0.0.9000
+Version: 0.1.0
 Authors@R: person("Andrew", "Brown", , "andrew.g.brown@usda.gov", role = c("aut", "cre"), comment = c(ORCID = "https://orcid.org/0000-0002-4565-533X"))
 Description: Builds a DuckDB database containing SSURGO data and generates derivative products.
 License: CC0
@@ -8,5 +8,10 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
 Imports: 
+    DBI,
     duckdb,
-    soilDB
+    soilDB,
+    sf
+Suggests:
+    future,
+    future.callr

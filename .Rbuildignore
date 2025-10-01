@@ -2,3 +2,6 @@
 ^\.Rproj\.user$
 ^LICENSE\.md$
 ^SSURGO.R$
+data
+misc
+_targets
