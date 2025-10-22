@@ -36,14 +36,39 @@ duckdb_query <- function(conn, query, n = -1) {
 }
 
 duckdb_spatial_query <- function(conn, table, x, geometry_column = "geom") {
-	duckdb_sf(
-		conn,
+	xx <- wk::as_wkt(x)
+	if (length(xx) > 1) {
+		xx <- wk::wk_collection(xx)
+	}
+	aoi_wkt_string <- as.character(xx)
+
+	query <- paste0(
+		"
+  SELECT mukey, areasymbol, musym, ST_AsWKB(",
+		geometry_column,
+		") AS ",
+		geometry_column,
+		", ST_Area(ST_Transform(",
+		geometry_column,
+		", 'OGC:CRS84', 'EPSG:5070'))/4046.86 AS ",
+		paste0(table, geometry_column),
+		"area
+  FROM ",
 		table,
-		WHERE = paste0("ST_Intersects(geom, ST_GeomFromText('",
-		  as.character(wk::as_wkt(x)),
-		"'))"),
-		geometry_column = geometry_column
-	)
+		"
+  WHERE ST_Intersects(",
+		geometry_column,
+		", ST_GeomFromText('",
+		aoi_wkt_string,
+		"'));
+  ")
+	res <- DBI::dbGetQuery(conn, query)
+
+	sfc_from_wkb <- sf::st_as_sfc(structure(as.list(res$geom), class = "WKB"))
+	sf::st_crs(sfc_from_wkb) <- "OGC:CRS84"
+
+	res2 <- sf::st_sf(as.data.frame(res)[!colnames(res) %in% "geom"],
+										geometry = sfc_from_wkb)
 }
 
 duckdb_sf <- function(conn, table, n = -1, JOIN = NULL, WHERE = NULL, geometry_column = "geom", add_columns = NULL) {
@@ -69,4 +94,15 @@ duckdb_table <- function(conn, layer) {
 	duckdb_query(conn, paste0("SELECT * FROM ", layer))
 }
 
+duckdb_create_spatial_index <- function(conn, table, geometry_column = "geom") {
 
+	index_name <- paste(c(table, geometry_column, "idx"), collapse = "_")
+	query <- paste0("CREATE INDEX IF NOT EXISTS ", index_name, " ON ", table, " USING RTREE (", geometry_column, ");")
+
+	DBI::dbExecute(conn, query)
+}
+
+duckdb_analyze_table <- function(conn, table) {
+	analyze_sql <- paste0("ANALYZE ", table, ";")
+	DBI::dbExecute(conn, analyze_sql)
+}

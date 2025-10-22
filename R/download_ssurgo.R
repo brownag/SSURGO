@@ -12,8 +12,13 @@
 download_ssurgo <- function(areasymbol, destdir = "data") {
     stopifnot(length(areasymbol) == 1)
     message(areasymbol)
-    x <- soilDB::downloadSSURGO(areasymbols = areasymbol,
-                                destdir = file.path(destdir, areasymbol))
-    attr(x, "sha1") <- digest::sha1(readBin(x, "raw"))
+    x <- try(soilDB::downloadSSURGO(areasymbols = areasymbol,
+                                    destdir = file.path(destdir, areasymbol)))
+    if (inherits(x, 'try-error')) {
+        x <- x[1]
+        attr(x, "sha1") <- NA
+    } else {
+        attr(x, "sha1") <- digest::sha1(readBin(x, "raw"))
+    }
     x
 }
