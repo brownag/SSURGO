@@ -94,6 +94,6 @@ This project is licensed under the terms specified in `LICENSE.md`.
 
 ## References
 
-- [SSURGO Database](https://www.nrcs.usda.gov/products/databases/ssurgo/)
+- [SSURGO Database](https://www.nrcs.usda.gov/resources/data-and-reports/soil-survey-geographic-database-ssurgo)
 - [targets R package](https://books.ropensci.org/targets/)
 - [DuckDB](https://duckdb.org/)
