@@ -14,19 +14,26 @@ This R project provides a reproducible pipeline for processing and building SSUR
 
 ## Installation
 
-To get started, ensure you have **R** installed, then clone this repository to a folder of your choice. 
+To get started, ensure you have **R** installed (4.0.0+), then clone this repository.
 
-You want to be sure to have a local repository instance; by default the downloaded data will be stored in "./data/" folder.
+This project uses [renv](https://rstudio.github.io/renv/) to manage a consistent, isolated set of package dependencies. When you open the project in R, the **.Rprofile** automatically activates renv, ensuring dependencies are loaded from the project-local library.
 
-The repository is set up as an **R** package, mainly to manage dependencies. You can install dependencies using `remotes::install_deps()`. You do not actually need to install the 'SSURGO' R package to run the pipeline, but the dependencies must be present.
+### First-time Setup
 
 ```r
-if (!requireNamespace("remotes")) install.packages("remotes")
+# Open R from the SSURGO/ directory
 setwd("path/to/SSURGO")
-remotes::install_deps()
+R
+
+# renv will auto-activate; initialize and discover dependencies from DESCRIPTION
+renv::init()
 ```
 
-Once you have dependencies installed, run **SSURGO.R** to generate a fresh **_targets.R** file.
+### After Setup
+
+Dependencies are managed in the project-local environment via renv. To add or remove dependencies, modify **DESCRIPTION** and run `renv::install()` or `renv::remove()`, which will also update your local lock file.
+
+Once dependencies are set up, run **SSURGO.R** to generate the **_targets.R** pipeline file:
 
 You can modify the soil survey areas to include in the database in the first four targets. The default setup assumes you are creating a database with all US States, but you can choose any subset of one or more states, or any alternative method to create the `ssas` target (a character vector of area symbols).
 
@@ -66,11 +73,14 @@ SSURGO/
 
 ## Dependencies
 
+All runtime dependencies are declared in **DESCRIPTION** and managed by renv:
 - **targets**: Workflow orchestration
 - **duckdb**: In-process SQL database engine
-- R (>= 4.0.0 recommended)
+- **soilDB**: SSURGO data download utilities
+- **sf**: Spatial data handling
+- Plus supporting packages (**DBI**, **tarchetypes**, **geotargets**)
 
-See the `DESCRIPTION` file for complete dependency information.
+R >= 4.0.0 is required. See `DESCRIPTION` for full details.
 
 ## How It Works
 
@@ -79,6 +89,15 @@ The pipeline follows a structured approach:
 1. **Data Ingestion**: Download and prepare SSURGO data sources
 2. **Database Building**: Construct optimized DuckDB databases
 3. **Output**: Generate final database artifacts
+
+## Dependency Management with renv
+
+This project uses **renv** to provide each user with an isolated, project-local R package library. The **.Rprofile** file automatically activates renv when you start R in this directory—no manual setup needed beyond the initial `renv::restore()`.
+
+**Why this approach?** Rather than pinning package versions in version control, each user maintains a local **renv.lock** file (which is .gitignored). This allows:
+- Flexibility: Teams can work with newer package versions if desired
+- Isolation: This project's dependencies don't affect your other R work
+- Simplicity: No need to manage global package state
 
 ## Contributing
 
