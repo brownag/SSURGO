@@ -6,24 +6,25 @@ tar_option_set(packages = c("SSURGO", "soilDB", "duckdb", "DBI",
 DESTINATION_DIR <- "data"
 tar_source()
 future::plan(future.callr::callr)
-list(tar_target(destdir, DESTINATION_DIR), tar_target(ssas, get_area_symbols()), 
-    tar_target(statesym, get_state_symbols(ssas)), tar_target(name = ssa, 
-        command = download_state(statesym, ssas, destdir), pattern = map(statesym)), 
-    tar_files(ssa_files, ssa[!grepl("^Error", ssa)]), tar_target(ssurgo_duckdb_path, 
-        "data/SSURGO.duckdb"), tar_target(ssurgo_create_duckdb, 
-        {
-            res <- ssa_files
-            if (file.exists(ssurgo_duckdb_path)) {
-                file.remove(ssurgo_duckdb_path)
-            }
-            conn <- duckdb_create_connection(ssurgo_duckdb_path)
-            res <- soilDB::createSSURGO(exdir = DESTINATION_DIR, 
-                conn = conn, maxruledepth = 0, include_spatial = c("mupolygon"), 
-                include_tabular = c("legend", "mapunit", "muaggatt", 
-                  "component", "coecoclass"))
-            DBI::dbDisconnect(conn)
-            res
-        }), tar_target(ssurgo_duckdb, {
+list(tar_target(destdir, DESTINATION_DIR), tar_target(name = ssa_list, 
+    command = {
+        files <- list.files(file.path(DESTINATION_DIR), pattern = "^wss_.*_.*\\.zip$", 
+            recursive = TRUE, full.names = TRUE)
+        stopifnot(length(files) == 3385)
+        sort(files)
+    }), tar_target(ssurgo_duckdb_path, "data/SSURGO.duckdb"), 
+    tar_target(ssurgo_create_duckdb, {
+        res <- ssa_list
+        if (file.exists(ssurgo_duckdb_path)) {
+            file.remove(ssurgo_duckdb_path)
+        }
+        conn <- duckdb_create_connection(ssurgo_duckdb_path)
+        res <- soilDB::createSSURGO(exdir = DESTINATION_DIR, 
+            conn = conn, maxruledepth = 0, include_spatial = c("mupolygon", 
+                "featpoint"), include_tabular = TRUE)
+        DBI::dbDisconnect(conn)
+        res
+    }), tar_target(ssurgo_duckdb, {
         list(tables = ssurgo_create_duckdb, dsn = ssurgo_duckdb_path)
     }), tar_files(ssurgo_dsn, {
         ssurgo_duckdb$dsn

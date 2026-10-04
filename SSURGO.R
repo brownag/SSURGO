@@ -1,3 +1,12 @@
+# SSURGO Data Pipeline: Two-Step Workflow
+#
+# Data validation (R/ensure_data.R) runs OUTSIDE the targets pipeline for robustness:
+# - Prevents unnecessary re-downloads if pipeline run fails
+# - Leaves targets metadata clean and consistent
+#
+# Workflow: (1) Rscript R/ensure_data.R  →  (2) targets::tar_make()
+# Lesson: incomplete targets runs corrupt metadata; pre-validation outside targets avoids this.
+
 library(targets)
 library(soilDB)
 library(duckdb)
@@ -21,17 +30,22 @@ future::plan(future.callr::callr)
 
 list(
     tar_target(destdir, DESTINATION_DIR),
-    tar_target(ssas, get_area_symbols()),
-    tar_target(statesym, get_state_symbols(ssas)),
     tar_target(
-        name = ssa,
-        command = download_state(statesym, ssas, destdir),
-        pattern = map(statesym)
+        name = ssa_list,
+        command = {
+            files <- list.files(
+                file.path(DESTINATION_DIR),
+                pattern = "^wss_.*_.*\\.zip$",
+                recursive = TRUE,
+                full.names = TRUE
+            )
+            stopifnot(length(files) == 3385)
+            sort(files)
+        }
     ),
-    tar_files(ssa_files, ssa[!grepl("^Error", ssa)]),
     tar_target(ssurgo_duckdb_path, "data/SSURGO.duckdb"),
     tar_target(ssurgo_create_duckdb, {
-        res <- ssa_files
+        res <- ssa_list
         if (file.exists(ssurgo_duckdb_path)) {
           file.remove(ssurgo_duckdb_path)
         }
@@ -41,8 +55,8 @@ list(
           exdir = DESTINATION_DIR,
           conn = conn,
           maxruledepth = 0,
-          include_spatial = c("mupolygon"),
-          include_tabular = c("legend", "mapunit", "muaggatt", "component", "coecoclass")
+          include_spatial = c("mupolygon", "featpoint"),
+          include_tabular = TRUE #c("legend", "mapunit", "muaggatt", "component", "coecoclass")
         )
         DBI::dbDisconnect(conn)
         res
