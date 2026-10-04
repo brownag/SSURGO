@@ -12,6 +12,7 @@
 download_ssurgo <- function(areasymbol, destdir = "data") {
     stopifnot(length(areasymbol) == 1)
     message(areasymbol)
+    options(soilDB.timeout=3000)
     x <- try(soilDB::downloadSSURGO(areasymbols = areasymbol,
                                     destdir = file.path(destdir, areasymbol)))
     if (inherits(x, 'try-error')) {
